@@ -29,6 +29,7 @@ defmodule Conversion do
 
   def pressbook_to_workbook(segment, output_dir) do
     parsed = Pressbooks.page(segment)
+
     id = Map.get(parsed.data, :id)
 
     xml = Writer.render(%Context{}, parsed, XML)

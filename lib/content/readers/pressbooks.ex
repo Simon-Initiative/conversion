@@ -21,7 +21,7 @@ defmodule Conversion.Content.Readers.Pressbooks do
 
     {:ok,
      %{
-       pages: parsed |> Floki.find("div[class=\"chapter standard\"]"),
+       pages: parsed |> Floki.find("div[class=\"chapter standard \"]"),
        toc: parsed |> Floki.find("div[id=\"toc\"]") |> hd,
        root: parsed
      }}
@@ -41,6 +41,7 @@ defmodule Conversion.Content.Readers.Pressbooks do
   end
 
   def organization(root) do
+
     modules =
       Floki.find(root, "li")
       |> Enum.reduce([], fn item, acc ->
@@ -118,6 +119,8 @@ defmodule Conversion.Content.Readers.Pressbooks do
     content_nodes =
       get_div_by_class(children, "ugc chapter-ugc")
       |> Enum.map(fn n -> handle(n) end)
+
+    IO.inspect content_nodes
 
     licensing_nodes =
       get_div_by_class(children, "licensing")
