@@ -13,6 +13,7 @@ defmodule Conversion do
     input = read_from_file(input_file)
 
     {:ok, %{pages: pages, toc: toc, root: root}} = Pressbooks.segment(input)
+    IO.puts("pages: #{length(pages)}")
 
     Enum.map(pages, fn r -> r end)
     |> Enum.map(fn s -> pressbook_to_workbook(s, output_dir) end)
