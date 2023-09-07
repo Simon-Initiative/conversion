@@ -21,7 +21,7 @@ defmodule Conversion.Content.Readers.Pressbooks do
 
     {:ok,
      %{
-       pages: parsed |> Floki.find("div.chapter.standard"),
+       pages: parsed |> Floki.find("div.chapter.standard,div.front-matter,div.back-matter"),
        toc: parsed |> Floki.find("div[id=\"toc\"]") |> hd,
        root: parsed
      }}
@@ -50,11 +50,20 @@ defmodule Conversion.Content.Readers.Pressbooks do
               %Module{id: id, title: title}
 
             {"li", [{"class", "chapter standard"}], [{"a", [{"href", "#" <> id}], _}]} ->
+              %Reference{id: id, chapter: true}
+
+            {"li", [{"class", "back-matter " <> _type}], [{"a", [{"href", "#" <> id}], _}]} ->
+              %Reference{id: id}
+
+            {"li", [{"class", "front-matter " <> _type}], [{"a", [{"href", "#" <> id}], _}]} ->
               %Reference{id: id}
 
             _ ->
               :ignore
           end
+
+        IO.puts("parsed toc item:")
+        IO.inspect(parsed)
 
         case parsed do
           :ignore ->
@@ -63,10 +72,13 @@ defmodule Conversion.Content.Readers.Pressbooks do
           %Module{} = m ->
             [m] ++ acc
 
-          %Reference{} = r ->
+          %Reference{chapter: true} = r ->
             case acc do
               [hd | rest] -> [%{hd | nodes: hd.nodes ++ [r]}] ++ rest
             end
+
+          %Reference{} = r ->
+            [r] ++ acc
         end
       end)
       |> Enum.reverse()
@@ -116,7 +128,8 @@ defmodule Conversion.Content.Readers.Pressbooks do
       end
 
     content_nodes =
-      get_div_by_class(children, "ugc chapter-ugc")
+      Floki.find(children, "div.ugc")
+      # get_div_by_class(children, "ugc chapter-ugc")
       |> Enum.map(fn n -> handle(n) end)
 
     # IO.inspect content_nodes
@@ -318,6 +331,11 @@ defmodule Conversion.Content.Readers.Pressbooks do
       data: extract_id(attributes),
       nodes: Enum.map(children, fn c -> handle(c) end)
     }
+  end
+
+  # used within dt in glossary to wrap defined term. This just strips it
+  def handle({"dfn", _attributes, children}) do
+    Enum.map(children, fn c -> handle(c) end)
   end
 
   def handle({"ol", attributes, children}) do
