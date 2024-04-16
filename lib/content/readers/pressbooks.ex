@@ -62,8 +62,8 @@ defmodule Conversion.Content.Readers.Pressbooks do
               :ignore
           end
 
-        IO.puts("parsed toc item:")
-        IO.inspect(parsed)
+        # IO.puts("parsed toc item:")
+        # IO.inspect(parsed)
 
         case parsed do
           :ignore ->
@@ -489,11 +489,30 @@ defmodule Conversion.Content.Readers.Pressbooks do
 
   def handle({"a", attributes, children}) do
     data = extract(attributes)
+    hr = Map.get(data, "href", "")
 
+    # distinguish internal links by setting idref
+    # link to course page has form http[s]://<site>/<courseid>/chapter/page-title-id-part
     data =
-      case Map.get(data, "href", "") do
-        "#" <> _ -> Map.put(data, "href", "https://oli.cmu.edu")
-        _ -> data
+      cond do
+        match = Regex.run(~r/\/chapter\/([^\/]+)\/$/, hr) ->
+          [_, id] = match
+          Map.put(data, "idref", "chapter-" <> id)
+
+        match = Regex.run(~r/\/back-matter\/([^\/]+)\/$/, hr) ->
+          [_, id] = match
+          Map.put(data, "idref", "back-matter-" <> id)
+
+        match = Regex.run(~r/\/front-matter\/([^\/]+)\/$/, hr) ->
+          [_, id] = match
+          Map.put(data, "idref", "front-matter-" <> id)
+
+        match?("#" <> _, hr) ->
+          IO.puts("link #{hr}")
+          Map.put(data, "href", "https://oli.cmu.edu")
+
+        true ->
+          data
       end
 
     %Inline{

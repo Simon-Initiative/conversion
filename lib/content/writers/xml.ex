@@ -116,6 +116,10 @@ defmodule Conversion.Content.Writers.XML do
     Enum.map(nodes, fn n -> n.text end)
   end
 
+  def a(%Context{} = _context, next, %{data: %{"idref" => idref}}) do
+    ["<activity_link idref=\"#{escape_xml(idref)}\">", next.(), "</activity_link>\n"]
+  end
+
   # pressbooks export can include useless links w/empty href: ignore
   def a(%Context{} = _context, next, %{data: %{"href" => href}}) when href != "" do
     ["<link href=\"#{escape_xml(href)}\">", next.(), "</link>\n"]
